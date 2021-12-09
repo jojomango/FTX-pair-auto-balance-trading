@@ -3,16 +3,14 @@ import BN from 'bignumber.js'
 import crypto from 'crypto'
 
 type SecretInfo = {
-  ftxAccount: string;
-  ftxAPIKey: string;
-  ftxSecret: string;
-  chatID: string;
-  tgToken: string;
+  ftxAccountETH: string;
+  ftxAPIKeyETH: string;
+  ftxSecretETH: string;
 }
 
 export async function handler({ secrets }: { secrets: SecretInfo }) {
-  const { ftxAccount, ftxAPIKey, ftxSecret, chatID, tgToken } = secrets
-  if (!ftxAccount || !ftxAPIKey || !ftxSecret || !chatID || !tgToken) {
+  const { ftxAccountETH: ftxAccount, ftxAPIKeyETH: ftxAPIKey, ftxSecretETH: ftxSecret } = secrets
+  if (!ftxAccount || !ftxAPIKey || !ftxSecret) {
     console.warn('Should set secrect properly')
     return
   }
@@ -80,7 +78,7 @@ export async function handler({ secrets }: { secrets: SecretInfo }) {
     }).map((r: Record<string, any>) => {
       return postSpotMarginOffers({
         coin: r.coin,
-        size: r.total,
+        size: r.total * 0.9,
         rate: 1e-6
       })
     })
@@ -90,10 +88,7 @@ export async function handler({ secrets }: { secrets: SecretInfo }) {
         console.log(reses[i])
       } else {
         const message = `[ftx-lending] failed to lend ${JSON.stringify(reses[i])}`
-        const res = await axios.get(`https://api.telegram.org/bot${tgToken}/sendMessage?chat_id=${chatID}&text=${message}`)
-        if (!res.data.ok) {
-          console.log(message)
-        }
+        console.log(message)
       }
     }
     return reses
@@ -105,8 +100,8 @@ export async function handler({ secrets }: { secrets: SecretInfo }) {
 // To run locally (this code will not be executed in Autotasks)
 if (require.main === module) {
   require('dotenv').config();
-  const { ftxAccount, ftxAPIKey, ftxSecret, chatID, tgToken } = process.env as SecretInfo
-  handler({ secrets: { ftxAccount, ftxAPIKey, ftxSecret, chatID, tgToken } })
+  const { ftxAccountETH, ftxAPIKeyETH, ftxSecretETH } = process.env as SecretInfo
+  handler({ secrets: { ftxAccountETH, ftxAPIKeyETH, ftxSecretETH } })
     .then(() => process.exit(0))
     .catch((error: Error) => { console.error(error); process.exit(1); });
 }

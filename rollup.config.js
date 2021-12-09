@@ -19,30 +19,9 @@ const baseConfig = {
 }
 
 export default [{
-  input: 'src/lonstaking.ts',
-  output: {
-    file: 'dist/lonstaking.js',
-    format: 'cjs',
-  },
-  ...baseConfig
-}, {
-  input: 'src/watchuniswappair.ts',
-  output: {
-    file: 'dist/watchuniswappair.js',
-    format: 'cjs',
-  },
-  ...baseConfig
-}, {
-  input: 'src/watchminer.ts',
-  output: {
-    file: 'dist/watchminer.js',
-    format: 'cjs',
-  },
-  ...baseConfig
-}, {
   input: 'src/ftxlending.ts',
   output: {
-    file: 'dist/ftxlending.js',
+    file: 'dist/index.js',
     format: 'cjs',
   },
   ...baseConfig
