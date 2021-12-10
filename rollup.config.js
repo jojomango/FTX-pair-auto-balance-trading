@@ -19,7 +19,7 @@ const baseConfig = {
 }
 
 export default [{
-  input: 'src/ftxlending.ts',
+  input: 'src/ftxtrading.ts',
   output: {
     file: 'dist/index.js',
     format: 'cjs',
