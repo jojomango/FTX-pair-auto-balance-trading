@@ -143,10 +143,10 @@ export async function handler(event: HandlerEvent) {
     });
     const sumValue = balances.reduce((acc: number, current: Record<string, any>) => acc + current.usdValue,0) as number;
     const currencyObj = balances.find((r: Record<string, any>) => r.coin === currency);
-    const currencyValue = currencyObj.usdValue as number;
+    const currencyValue = currencyObj?.usdValue || 0 as number;
     currency_balance = parseFloat((currencyValue /sumValue).toFixed(4));
-    currency_amt = currencyObj.total;
-    console.log('currency:', { currency_balance, currency_amt });
+    currency_amt = currencyObj?.total;
+    console.log('currency:', { currency, currency_balance, currency_amt });
   } else {
     throw new Error('get balance fail');
   }
