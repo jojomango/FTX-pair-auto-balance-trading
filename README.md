@@ -46,3 +46,6 @@ to override autoTask code in defender side by the command:
 $ yarn build && yarn upload
 ```
 
+## Other configs
+
+Can change currency, rebalance boundary in src/config.js file
