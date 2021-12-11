@@ -1,6 +1,7 @@
 import axios from 'axios'
 import BN from 'bignumber.js'
 import crypto from 'crypto'
+import config from './config';
 
 type SecretInfo = {
   ftxAccountBTC: string;
@@ -12,10 +13,16 @@ type HandlerEvent = {
   secrets: SecretInfo;
 }
 
-const lowestBalance = 0.4;
-const highestBalance = 0.6;
-const offsetBalance = 0.01;
-const targetMarket = 'BTC/USD';
+const {
+  lowestBalance,
+  highestBalance,
+  offsetBalance,
+  offsetPricePercent,
+  targetMarket,
+  currency,
+} = config;
+
+
 
 export async function handler(event: HandlerEvent) {
   const { secrets } = event;
@@ -126,8 +133,8 @@ export async function handler(event: HandlerEvent) {
     console.log('cancel fail', cancelOrder_res);
   }
 
-  let BTC_balance;
-  let BTC_amt;
+  let currency_balance;
+  let currency_amt;
 
   const balance_res = await getWalletBalance()
   if (balance_res.info && balance_res.info.success) {
@@ -135,11 +142,11 @@ export async function handler(event: HandlerEvent) {
       return (new BN(r.total)).gt(ZERO)
     });
     const sumValue = balances.reduce((acc: number, current: Record<string, any>) => acc + current.usdValue,0) as number;
-    const BTC = balances.find((r: Record<string, any>) => r.coin === 'BTC');
-    const BTC_Value = BTC.usdValue as number;
-    BTC_balance = parseFloat((BTC_Value /sumValue).toFixed(4));
-    BTC_amt = BTC.total;
-    console.log('btc balance:', { BTC_balance, BTC_amt });
+    const currencyObj = balances.find((r: Record<string, any>) => r.coin === currency);
+    const currencyValue = currencyObj.usdValue as number;
+    currency_balance = parseFloat((currencyValue /sumValue).toFixed(4));
+    currency_amt = currencyObj.total;
+    console.log('currency:', { currency_balance, currency_amt });
   } else {
     throw new Error('get balance fail');
   }
@@ -153,8 +160,8 @@ export async function handler(event: HandlerEvent) {
   if (orders_res.info && orders_res.info.success) {
     const lastOrder = orders_res.info.result.find((r:Record<string, any> )=> r.filledSize > 0);
     if (lastOrder) {
-      topPrice = lastOrder.price * 1.03;
-      bottomPrice = lastOrder.price * 0.97;
+      topPrice = lastOrder.price * (1 + offsetPricePercent);
+      bottomPrice = lastOrder.price * (1 - offsetPricePercent);
       lastPrice = lastOrder.price;
     }
     console.log('prices:', { topPrice, bottomPrice, lastPrice });
@@ -183,14 +190,14 @@ export async function handler(event: HandlerEvent) {
 
   if (currentPrice >= topPrice) {
     // sell
-    const targetBalance = BTC_balance - offsetBalance;
+    const targetBalance = currency_balance - offsetBalance;
     let tradeBalance;
     if (targetBalance >= lowestBalance) {
       tradeBalance = offsetBalance
     } else {
-      tradeBalance = BTC_balance - lowestBalance;
+      tradeBalance = currency_balance - lowestBalance;
     }
-    const size = (tradeBalance / BTC_balance) * BTC_amt;
+    const size = (tradeBalance / currency_balance) * currency_amt;
     if (size > minSize) {
       const order_res = await placeOrder(
         {
@@ -215,14 +222,14 @@ export async function handler(event: HandlerEvent) {
     
   } else if (currentPrice <= bottomPrice) {
     // buy
-    const targetBalance = BTC_balance + offsetBalance;
+    const targetBalance = currency_balance + offsetBalance;
     let tradeBalance;
     if (targetBalance <= highestBalance) {
       tradeBalance = offsetBalance
     } else {
-      tradeBalance = highestBalance - BTC_balance;
+      tradeBalance = highestBalance - currency_balance;
     }
-    const size = (tradeBalance / BTC_balance) * BTC_amt;
+    const size = (tradeBalance / currency_balance) * currency_amt;
     if (size > minSize) {
       const order_res = await placeOrder(
         {
