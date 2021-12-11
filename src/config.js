@@ -6,3 +6,12 @@ export default {
   targetMarket: 'BTC/USD',
   currency: 'BTC',
 };
+
+/*
+default rule explain:
+currency balance should change between 0.4 to 0.6 (40% - 60%) -"lowestBalance", "highestBalance"
+whenever price change 3% - "offsetPricePercent"
+we change the currecny balance 1% - "offsetBalance"
+depends on price rise or drop
+'BTC/USD' is the pair we use to sell/buy currency - "targetMarket"
+*/
