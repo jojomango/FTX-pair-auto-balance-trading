@@ -3,43 +3,46 @@ This repository collect fun scripts that run on openzeppelin defender autotask
 
 > Note: these scripts are experimental, use at your own risk.
 
-### Lon Staking
-This script will lookup the user's current staking and calculate how many Lon token will earn if redeem at the execution time. Instead showing the total income in token, you can find the total income in USD which calculate from the Uniswap token information. You can also set the threshold value to notify if the earning exceeds the value (in token not in USD).
+### FTX trade automatically
+
+the project logic is balance 2 currency(BTC, USD) when the price changed
+use latest trade price as base, if the price rise 3%, then reduce the balance 1% to sell, vice verse.
+
 
 ```BASH
-$ npm run start_lonstaking
-```
-
-### Watch Uniswap V2 Pair
-
-This script will fetch uniswap v2 pair information from TheGraph, including tokens name and tokens price.
-
-```BASH
-$ npm run start_watchuniswappair
-```
-
-### FTX lend automatically
-
-This script will lend tokens in FTX Exchange automatically. When execute this script, it fetch balances, loop through all tokens, and submit spot margin offers for these tokens.
-
-> Remember to open a subaccount and enable option orders.
-
-```BASH
-$ npm run start_ftxlending
+$ yarn build && yarn start
 ```
 
 ## Running Locally
 
-You can run the scripts locally, instead of in an Autotask, via a Defender Relayer. Create a Defender Relayer on mainnet, write down the API key and secret, and create a `.env` file in this folder with the following content:
+You can run the scripts locally, instead of in an Autotask, and create a `.env` file in this folder with the following content:
 
 ```
-lon=0x0000000000095413afc295d19edeb1ad7b71c952
-user=
-thresholdLon=1
-tgToken=
-chatID=
-uniswapPair=
-ftxAccount=
-ftxAPIKey=
-ftxSecret=
+ftxAccountBTC=<ftx-sub-account-name>
+ftxAPIKeyBTC=<ftx-sub-account-api-key>
+ftxSecretBTC=<ftx-sub-account-api-secret>
 ```
+
+and make sure you create these 3 secrets on defender also, must has the same "name" and "value", and the name is case-sensitive.
+
+## Upload code to defender autoTask
+
+After `yarn build` finished, you could upload built code to defender autotask, before that add defender team API KEY/SECRET to `.env` file:
+
+```
+API_KEY=<defender-team-API-KEY>
+API_SECRET=<defender-team-API-SECRET>
+```
+and setup "defender-autoTask-ID" in `package.json -> scripts -> upload` command,
+the command should update as:
+
+```
+"upload": "defender-autotask update-code <defender-autoTask-ID> ./dist",
+```
+
+to override autoTask code in defender side by the command:
+
+```BASH
+$ yarn build && yarn upload
+```
+

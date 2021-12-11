@@ -1,29 +1,26 @@
 import axios from 'axios'
 import BN from 'bignumber.js'
 import crypto from 'crypto'
-import { KeyValueStoreClient } from 'defender-kvstore-client';
 
 type SecretInfo = {
-  ftxAccountETH: string;
-  ftxAPIKeyETH: string;
-  ftxSecretETH: string;
+  ftxAccountBTC: string;
+  ftxAPIKeyBTC: string;
+  ftxSecretBTC: string;
 }
 
 type HandlerEvent = {
   secrets: SecretInfo;
 }
 
-const KEY_VAL_PREFIX = 'ETH-trade-';
-
 const lowestBalance = 0.4;
 const highestBalance = 0.6;
 const offsetBalance = 0.01;
+const targetMarket = 'BTC/USD';
 
 export async function handler(event: HandlerEvent) {
   const { secrets } = event;
-  const { ftxAccountETH: ftxAccount, ftxAPIKeyETH: ftxAPIKey, ftxSecretETH: ftxSecret } = secrets
-  // @ts-ignore:next-line
-  // const store = new KeyValueStoreClient(event);
+  const { ftxAccountBTC: ftxAccount, ftxAPIKeyBTC: ftxAPIKey, ftxSecretBTC: ftxSecret } = secrets
+
   if (!ftxAccount || !ftxAPIKey || !ftxSecret) {
     console.warn('Should set secrect properly')
     return
@@ -122,29 +119,27 @@ export async function handler(event: HandlerEvent) {
     throw new Error('failed to post spot margin offers')
   }
 
-  const cancelOrder_res = await cancelAllOrders('ETH/USD');
+  const cancelOrder_res = await cancelAllOrders(targetMarket);
   if (cancelOrder_res && cancelOrder_res.success) {
     console.log('cancle order success:', cancelOrder_res.result);
   } else {
     console.log('cancel fail', cancelOrder_res);
   }
 
-  let ETH_balance;
-  let ETH_amt;
+  let BTC_balance;
+  let BTC_amt;
 
   const balance_res = await getWalletBalance()
   if (balance_res.info && balance_res.info.success) {
-    // loop for all coins that balance > 0
-    // const promises = res.info.result.filter((r: Record<string, any>) => {
     const balances = balance_res.info.result.filter((r: Record<string, any>) => {
       return (new BN(r.total)).gt(ZERO)
     });
     const sumValue = balances.reduce((acc: number, current: Record<string, any>) => acc + current.usdValue,0) as number;
-    const ETH = balances.find((r: Record<string, any>) => r.coin === 'ETH');
-    const ETH_Value = ETH.usdValue as number;
-    ETH_balance = parseFloat((ETH_Value /sumValue).toFixed(4));
-    ETH_amt = ETH.total;
-    console.log('eth balance:', { ETH_balance, ETH_amt });
+    const BTC = balances.find((r: Record<string, any>) => r.coin === 'BTC');
+    const BTC_Value = BTC.usdValue as number;
+    BTC_balance = parseFloat((BTC_Value /sumValue).toFixed(4));
+    BTC_amt = BTC.total;
+    console.log('btc balance:', { BTC_balance, BTC_amt });
   } else {
     throw new Error('get balance fail');
   }
@@ -153,7 +148,7 @@ export async function handler(event: HandlerEvent) {
   let bottomPrice;
   let lastPrice;
 
-  const orders_res = await getOrderHistory('ETH/USD');
+  const orders_res = await getOrderHistory(targetMarket);
 
   if (orders_res.info && orders_res.info.success) {
     const lastOrder = orders_res.info.result.find((r:Record<string, any> )=> r.filledSize > 0);
@@ -172,7 +167,7 @@ export async function handler(event: HandlerEvent) {
   let bestBid;
   let minSize;
 
-  const market_res = await getSingleMarket('ETH/USD');
+  const market_res = await getSingleMarket(targetMarket);
 
   if (market_res.info && market_res.info.success) {
     const marketObj = market_res.info.result;
@@ -188,18 +183,18 @@ export async function handler(event: HandlerEvent) {
 
   if (currentPrice >= topPrice) {
     // sell
-    const targetBalance = ETH_balance - offsetBalance;
+    const targetBalance = BTC_balance - offsetBalance;
     let tradeBalance;
     if (targetBalance >= lowestBalance) {
       tradeBalance = offsetBalance
     } else {
-      tradeBalance = ETH_balance - lowestBalance;
+      tradeBalance = BTC_balance - lowestBalance;
     }
-    const size = (tradeBalance / ETH_balance) * ETH_amt;
+    const size = (tradeBalance / BTC_balance) * BTC_amt;
     if (size > minSize) {
       const order_res = await placeOrder(
         {
-          "market": "ETH/USD",
+          "market": targetMarket,
           "side": "sell",
           "price": bestAsk,
           "type": "limit",
@@ -220,18 +215,18 @@ export async function handler(event: HandlerEvent) {
     
   } else if (currentPrice <= bottomPrice) {
     // buy
-    const targetBalance = ETH_balance + offsetBalance;
+    const targetBalance = BTC_balance + offsetBalance;
     let tradeBalance;
     if (targetBalance <= highestBalance) {
       tradeBalance = offsetBalance
     } else {
-      tradeBalance = highestBalance - ETH_balance;
+      tradeBalance = highestBalance - BTC_balance;
     }
-    const size = (tradeBalance / ETH_balance) * ETH_amt;
+    const size = (tradeBalance / BTC_balance) * BTC_amt;
     if (size > minSize) {
       const order_res = await placeOrder(
         {
-          "market": "ETH/USD",
+          "market": targetMarket,
           "side": "buy",
           "price": bestBid,
           "type": "limit",
@@ -256,8 +251,8 @@ export async function handler(event: HandlerEvent) {
 // To run locally (this code will not be executed in Autotasks)
 if (require.main === module) {
   require('dotenv').config();
-  const { ftxAccountETH, ftxAPIKeyETH, ftxSecretETH } = process.env as SecretInfo
-  handler({ secrets: { ftxAccountETH, ftxAPIKeyETH, ftxSecretETH } })
+  const { ftxAccountBTC, ftxAPIKeyBTC, ftxSecretBTC } = process.env as SecretInfo
+  handler({ secrets: { ftxAccountBTC, ftxAPIKeyBTC, ftxSecretBTC } })
     .then(() => process.exit(0))
     .catch((error: Error) => { console.error(error); process.exit(1); });
 }
