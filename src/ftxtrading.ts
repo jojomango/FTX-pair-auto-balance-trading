@@ -163,7 +163,12 @@ export async function handler(event: HandlerEvent) {
       topPrice = lastOrder.price * (1 + offsetPricePercent);
       bottomPrice = lastOrder.price * (1 - offsetPricePercent);
       lastPrice = lastOrder.price;
-    }
+    } 
+    // else {
+    //   /*uncomment if your sub-account has no trade ever */  
+    //   topPrice = '<manual-set-topPrice>';
+    //   bottomPrice = '<manual-set-bottom-Price>';
+    // }
     console.log('prices:', { topPrice, bottomPrice, lastPrice });
   } else {
     throw new Error('get order history fail');
@@ -183,7 +188,6 @@ export async function handler(event: HandlerEvent) {
     bestBid= marketObj.bid;
     minSize = marketObj.minProvideSize;
     console.log('market status:', { currentPrice, bestAsk, bestBid, minSize });
-    // TODO: handle if no order yet(no topPrice, bottomPrice)
   } else {
     throw new Error('get market fail');
   }
