@@ -191,13 +191,13 @@ export async function handler(event: HandlerEvent) {
   } else {
     throw new Error('get market fail');
   }
-
+  const diffBalance = ((Math.abs(currentPrice - lastPrice) / lastPrice) / offsetPricePercent) * offsetBalance;
   if (currentPrice >= topPrice) {
     // sell
-    const targetBalance = currency_balance - offsetBalance;
+    const targetBalance = currency_balance - diffBalance;
     let tradeBalance;
     if (targetBalance >= lowestBalance) {
-      tradeBalance = offsetBalance
+      tradeBalance = diffBalance;
     } else {
       tradeBalance = currency_balance - lowestBalance;
     }
@@ -229,7 +229,7 @@ export async function handler(event: HandlerEvent) {
     const targetBalance = currency_balance + offsetBalance;
     let tradeBalance;
     if (targetBalance <= highestBalance) {
-      tradeBalance = offsetBalance
+      tradeBalance = diffBalance;
     } else {
       tradeBalance = highestBalance - currency_balance;
     }
